@@ -1,6 +1,15 @@
-use std::env;
+use std::{env, error::Error};
 
-use teloxide::{prelude::*, update_listeners::webhooks};
+use teloxide::{dispatching::dialogue::InMemStorage, prelude::*, update_listeners::webhooks, types::Me, RequestError};
+
+type HandlerResult = Result<(), RequestError>;
+type MyDialogue = Dialogue<State, InMemStorage<State>>;
+
+#[derive(Clone, Default)]
+pub enum State {
+    #[default]
+    Start,
+}
 
 #[tokio::main]
 async fn main() {
@@ -25,13 +34,11 @@ async fn main() {
         .await
         .expect("Couldn't setup webhook");
 
-    teloxide::repl_with_listener(
-        bot,
-        |bot: Bot, msg: Message| async move {
-            bot.send_message(msg.chat.id, "pong").await?;
-            Ok(())
-        },
-        listener,
-    )
-    .await;
+    teloxide::repl_with_listener(bot, handler, listener).await;
+}
+
+async fn handler(bot: Bot, msg: Message, me: Me) -> HandlerResult {
+    println!("{:?}", me);
+    bot.send_message(msg.chat.id, "It works").await?;
+    Ok(())
 }
